@@ -1,10 +1,14 @@
 {
-    "name": "UserBG",
-    "description": "https://github.com/Discord-Custom-Covers/usrbg#request-your-own-usrbg",
+    "name": "UserBG by rhyan57",
+    "description": "Use Banners personalizados de forma gratuita com UserBG! • concertado com IA!",
     "authors": [
         {
             "name": "sapphire",
             "id": "757982547861962752"
+        },
+        {
+            "name": "Rhyan57",
+            "id": "896604349311115304"
         }
     ],
     "main": "src/index.tsx",
