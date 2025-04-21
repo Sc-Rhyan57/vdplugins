@@ -17,14 +17,31 @@ const getUserBannerURL = findByProps("default", "getUserBannerURL")
 
 let data: userBGData[]
 let unpatch: () => void
+let updateInterval: NodeJS.Timeout
 
 export const fetchData = async () => {
     try {
-        data = await (await safeFetch("https://raw.githubusercontent.com/Sc-Rhyan57/USERBANNER/refs/heads/main/data.json", { cache: "no-store" })).json()
+        const response = await safeFetch("https://raw.githubusercontent.com/Sc-Rhyan57/USERBANNER/refs/heads/main/data.json", { cache: "no-store" })
+        const newData = await response.json()
+        
+        if (JSON.stringify(data) !== JSON.stringify(newData)) {
+            data = newData
+            logger.log("[ USERBANNER ] Dados atualizados com sucesso!")
+            showToast("USERBANNER atualizado!")
+        }
+        
         return data
     } catch (e) {
         logger.error("[ USERBANNER ] API NÃO RESPONDEU!", e)
     }
+}
+
+const startPeriodicUpdates = (intervalMs = 60000) => {
+    if (updateInterval) clearInterval(updateInterval)
+    
+    updateInterval = setInterval(async () => {
+        await fetchData()
+    }, intervalMs)
 }
 
 export const onLoad = async () => {
@@ -35,8 +52,14 @@ export const onLoad = async () => {
         const customBanner = data?.find((i: userBGData) => i.uid === user?.id)
         if (user?.banner === undefined && customBanner) return customBanner.img
     })
+    
+    startPeriodicUpdates()
 }
 
-export const onUnload = () => unpatch?.()
+export const onUnload = () => {
+    unpatch?.()
+    
+    if (updateInterval) clearInterval(updateInterval)
+}
 
 export const settings = Settings
