@@ -10,18 +10,15 @@ const { ScrollView } = General
 const { FormSection, FormRow, FormSwitch } = Forms
 
 export default () => {
-    storage.nitroBanner ??= true
+    if (storage.nitroBanner === undefined) {
+        storage.nitroBanner = true
+    }
+    
+    const [nitroBanner, setNitroBanner] = React.useState(storage.nitroBanner)
     
     return (
         <ScrollView>
             <FormSection>
-            <FormSection>
-                <FormRow
-                    label="Rhyan57"
-                    leading={<FormRow.Icon source={getAssetIDByName("Discord")} />}
-                    trailing={FormRow.Arrow}
-                    onPress={() => url.openDeeplink("https://discord.gg/nqRYDf3tu8")}
-                />
                 <FormRow
                     label="Discord Server"
                     leading={<FormRow.Icon source={getAssetIDByName("Discord")} />}
@@ -33,7 +30,7 @@ export default () => {
                     leading={<FormRow.Icon source={getAssetIDByName("ic_message_retry")} />}
                     onPress={async () => {
                         const fetch = await fetchData()
-                        if (!fetch) return showToast("falha ao recarregar o banco de dados", getAssetIDByName("small"))
+                        if (!fetch) return showToast("Failed to reload DB", getAssetIDByName("small"))
                         return showToast("Reloaded DB", getAssetIDByName("check"))
                     }}
                 />
@@ -43,9 +40,10 @@ export default () => {
                     leading={<FormRow.Icon source={getAssetIDByName("ic_nitro_badge_24px")} />}
                     trailing={
                         <FormSwitch
-                            value={storage.nitroBanner}
+                            value={nitroBanner}
                             onValueChange={(value) => {
                                 storage.nitroBanner = value
+                                setNitroBanner(value)
                             }}
                         />
                     }
