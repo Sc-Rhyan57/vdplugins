@@ -27,7 +27,7 @@ export const fetchData = async () => {
         if (JSON.stringify(data) !== JSON.stringify(newData)) {
             data = newData
             logger.log("[ USERBANNER ] Dados atualizados com sucesso!")
-            showToast("USERBANNER atualizado!")
+            showToast("betterBanners atualizado!")
         }
         
         return data
