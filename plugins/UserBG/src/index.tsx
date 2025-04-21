@@ -20,16 +20,16 @@ let unpatch: () => void
 
 export const fetchData = async () => {
     try {
-        data = await (await safeFetch("https://raw.githubusercontent.com/Sc-Rhyan57/Vendeta-UserBG/refs/heads/main/data.json", { cache: "no-store" })).json()
+        data = await (await safeFetch("https://raw.githubusercontent.com/Sc-Rhyan57/USERBANNER/refs/heads/main/data.json", { cache: "no-store" })).json()
         return data
     } catch (e) {
-        logger.error("Failed to fetch userBG data", e)
+        logger.error("[ USERBANNER ] API NÃO RESPONDEU!", e)
     }
 }
 
 export const onLoad = async () => {
     await fetchData()
-    if (!data) return showToast("Failed to load DB")
+    if (!data) return showToast("FALHA AO CARREGAR USERBANNER")
 
     unpatch = after("getUserBannerURL", getUserBannerURL, ([user]) => {
         const customBanner = data?.find((i: userBGData) => i.uid === user?.id)
