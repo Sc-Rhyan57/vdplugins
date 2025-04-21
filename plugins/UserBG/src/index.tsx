@@ -20,20 +20,25 @@ let unpatch: () => void
 
 export const fetchData = async () => {
     try {
-        data = await (await safeFetch("https://raw.githubusercontent.com/Discord-Custom-Covers/usrbg/master/dist/usrbg.json", { cache: "no-store" })).json()
+        data = await (await safeFetch("https://usrbg.is-hardly.online/users", { cache: "no-store" })).json()
         return data
     } catch (e) {
-        logger.error("Failed to fetch userBG data", e)
+        logger.error("Falha ao buscar dados userBG", e)
     }
 }
 
 export const onLoad = async () => {
     await fetchData()
-    if (!data) return showToast("Failed to load DB")
+    if (!data) return showToast("Falha ao carregar o banco de dados")
 
     unpatch = after("getUserBannerURL", getUserBannerURL, ([user]) => {
-        const customBanner = data?.find((i: userBGData) => i.uid === user?.id)
-        if (user?.banner === undefined && customBanner) return customBanner.img
+        if (user?.banner !== undefined) return
+        
+        const userID = user?.id
+        if (!userID) return
+        
+        const customBanner = data?.find((i: userBGData) => i.uid === userID)
+        if (customBanner) return `https://usrbg.is-hardly.online/usrbg/v2/${userID}`
     })
 }
 
