@@ -28,7 +28,7 @@ export default () => (<ScrollView>
         <FormRow
             label="Banner api"
             leading={<FormRow.Icon source={getAssetIDByName("ic_link")} />}
-            subLabel="https://github.com/Sc-Rhyan57/USERBANNER"
+            subLabel="https://betterbanners.vercel.app/v1"
         />
     </FormSection>
 </ScrollView>)
