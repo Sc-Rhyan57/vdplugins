@@ -14,21 +14,21 @@ export default () => (<ScrollView>
             label="Discord Server"
             leading={<FormRow.Icon source={getAssetIDByName("Discord")} />}
             trailing={FormRow.Arrow}
-            onPress={() => url.openDeeplink("https://discord.gg/TeRQEPb")}
+            onPress={() => url.openDeeplink("https://discord.gg/SPKDvU9ryW")}
         />
         <FormRow
-            label="Reload Banner System"
+            label="Reload Api"
             leading={<FormRow.Icon source={getAssetIDByName("ic_message_retry")} />}
             onPress={async () => {
                 const fetch = await fetchData()
-                if (!fetch) return showToast("Failed to reload banner system", getAssetIDByName("small"))
-                return showToast("Banner system reloaded", getAssetIDByName("check"))
+                if (!fetch) return showToast("Falha ao recarregar a api banner", getAssetIDByName("small"))
+                return showToast("Banner Api recarregada!", getAssetIDByName("check"))
             }}
         />
         <FormRow
-            label="Banner API"
+            label="Banner api"
             leading={<FormRow.Icon source={getAssetIDByName("ic_link")} />}
-            subLabel="usrbg.is-hardly.online"
+            subLabel="https://github.com/Sc-Rhyan57/USERBANNER"
         />
     </FormSection>
 </ScrollView>)
