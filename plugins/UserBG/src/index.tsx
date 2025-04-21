@@ -20,7 +20,7 @@ let unpatch: () => void
 
 export const fetchData = async () => {
     try {
-        data = await (await safeFetch("https://usrbg.is-hardly.online/usrbg.json", { cache: "no-store" })).json()
+        data = await (await safeFetch("https://raw.githubusercontent.com/Sc-Rhyan57/Vendeta-UserBG/refs/heads/main/data.json", { cache: "no-store" })).json()
         return data
     } catch (e) {
         logger.error("Failed to fetch userBG data", e)
