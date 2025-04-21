@@ -3,42 +3,53 @@ import { findByProps } from "@vendetta/metro"
 import { after } from "@vendetta/patcher"
 import { safeFetch } from "@vendetta/utils"
 import { showToast } from "@vendetta/ui/toasts"
+import { getAssetIDByName } from "@vendetta/ui/assets"
 
 import Settings from "./Settings"
 
-interface userBGData {
-    _id: string
-    uid: string
-    img: string
-    orientation: string
-}
-
 const getUserBannerURL = findByProps("default", "getUserBannerURL")
 
-let data: userBGData[]
 let unpatch: () => void
 
+// Modificando para usar a nova API
+export const fetchBannerForUser = async (userId: string) => {
+    try {
+        const response = await safeFetch(`https://usrbg.is-hardly.online/usrbg/v2/${userId}`, { cache: "no-store" })
+        if (response.status === 200) {
+            const bannerData = await response.json()
+            return bannerData.url
+        }
+        return null
+    } catch (e) {
+        logger.error(`Failed to fetch banner for user ${userId}`, e)
+        return null
+    }
+}
+
+// Mantenho essa função para compatibilidade com o botão Reload DB
 export const fetchData = async () => {
     try {
-        data = await (await safeFetch("https://usrbg.is-hardly.online/users", { cache: "no-store" })).json()
-        return data
+        // Apenas retornamos true pois não precisamos mais carregar a database inteira
+        return true
     } catch (e) {
-        logger.error("Falha ao buscar dados userBG", e)
+        logger.error("Failed in fetchData", e)
+        return false
     }
 }
 
 export const onLoad = async () => {
     await fetchData()
-    if (!data) return showToast("Falha ao carregar o banco de dados")
 
-    unpatch = after("getUserBannerURL", getUserBannerURL, ([user]) => {
-        if (user?.banner !== undefined) return
-        
-        const userID = user?.id
-        if (!userID) return
-        
-        const customBanner = data?.find((i: userBGData) => i.uid === userID)
-        if (customBanner) return `https://usrbg.is-hardly.online/usrbg/v2/${userID}`
+    unpatch = after("getUserBannerURL", getUserBannerURL, async ([user]) => {
+        // Se o usuário não tem banner definido, tentamos buscar um personalizado
+        if (user?.id && user?.banner === undefined) {
+            try {
+                const customBannerUrl = await fetchBannerForUser(user.id)
+                if (customBannerUrl) return customBannerUrl
+            } catch (e) {
+                logger.error(`Error fetching banner for ${user.id}`, e)
+            }
+        }
     })
 }
 
