@@ -1,8 +1,12 @@
 import { registerPlugin } from "@vendetta/plugins";
 import { before } from "@vendetta/patcher";
 import { findByProps } from "@vendetta/metro";
+import { getAssetIDByName } from "@vendetta/ui/assets";
 import { storage } from "@vendetta/plugin";
-import Settings from "./Settings";
+import { React } from "@vendetta/metro/common";
+import { Forms } from "@vendetta/ui/components";
+
+const { FormSection, FormRow, FormSwitch, FormDivider } = Forms;
 
 if (!storage.method) storage.method = "new";
 if (!storage.imageSize) storage.imageSize = 48;
@@ -13,6 +17,49 @@ const MessageActions = findByProps("sendMessage", "receiveMessage") || findByPro
 const EmojiUtils = findByProps("getEmojiURL") || findByProps("translateEmojis");
 const EmojiPermissions = findByProps("hasEmojiPermission");
 const UserSettings = findByProps("showEmojiReactions");
+
+function Settings() {
+  return (
+    <FormSection title="BetterSpoof">
+      <FormRow
+        label="Método de substituição"
+        subLabel={`Atual: ${storage.method === "new" ? "Novo (URLs)" : "Antigo (Original)"}`}
+        leading={<FormRow.Icon source={getAssetIDByName("ic_message_edit")} />}
+        trailing={
+          <FormSwitch
+            value={storage.method === "new"}
+            onValueChange={() => {
+              storage.method = storage.method === "new" ? "old" : "new";
+            }}
+          />
+        }
+      />
+
+      <FormDivider />
+
+      <FormRow
+        label="Tamanho do emoji (px)"
+        subLabel={`Atual: ${storage.imageSize}px`}
+        leading={<FormRow.Icon source={getAssetIDByName("ic_image")} />}
+      />
+
+      <FormRow>
+        <Forms.FormInput
+          title="Tamanho do emoji"
+          placeholder="Tamanho (16-300)"
+          value={String(storage.imageSize)}
+          onChange={(val) => {
+            const size = parseInt(val);
+            if (!isNaN(size) && size > 0 && size <= 300) {
+              storage.imageSize = size;
+            }
+          }}
+          keyboardType="numeric"
+        />
+      </FormRow>
+    </FormSection>
+  );
+}
 
 export default registerPlugin({
   name: "BetterSpoof",
