@@ -1,114 +1,18 @@
 import { registerPlugin } from "@vendetta/plugins";
-import { findByProps } from "@vendetta/metro";
 import { before } from "@vendetta/patcher";
-import { getAssetIDByName } from "@vendetta/ui/assets";
+import { findByProps } from "@vendetta/metro";
 import { storage } from "@vendetta/plugin";
 import Settings from "./Settings";
 
 if (!storage.method) storage.method = "new";
 if (!storage.imageSize) storage.imageSize = 48;
 
-let MessageActions, EmojiStore, EmojiUtils;
+const patches = [];
 
-try {
-  MessageActions = findByProps("sendMessage", "receiveMessage");
-  EmojiStore = findByProps("getCustomEmojiById");
-  EmojiUtils = findByProps("getEmojiURL");
-} catch (e) {
-  console.error("Erro ao buscar módulos necessários:", e);
-}
-
-let messagePatch;
-let emojiPatches = [];
-
-const startPlugin = () => {
-  if (!MessageActions) {
-    console.error("MessageActions não encontrado, o plugin não funcionará corretamente");
-    return;
-  }
-
-  if (!EmojiUtils) {
-    console.error("EmojiUtils não encontrado, o plugin não funcionará corretamente");
-    return;
-  }
-
-  messagePatch = before("sendMessage", MessageActions, (args) => {
-    try {
-      const [channelId, message] = args;
-      
-      if (message?.content) {
-        const emojiRegex = /<(a)?:([^:]+):(\d+)>/g;
-        let match;
-        
-        while ((match = emojiRegex.exec(message.content)) !== null) {
-          const [fullMatch, animated, emojiName, emojiId] = match;
-          
-          if (storage.method === "old") {
-            continue;
-          } else if (storage.method === "new") {
-            const isAnimated = animated ? true : false;
-            const emojiURL = EmojiUtils.getEmojiURL({
-              id: emojiId,
-              animated: isAnimated
-            });
-            
-            const sizedURL = `${emojiURL}?size=${storage.imageSize}`;
-            
-            message.content = message.content.replace(fullMatch, sizedURL);
-          }
-        }
-      }
-    } catch (e) {
-      console.error("Erro ao processar mensagem:", e);
-    }
-    
-    return args;
-  });
-};
-
-const stopPlugin = () => {
-  if (messagePatch) messagePatch();
-};
-
-const patchEmojiPermissions = () => {
-  try {
-    const EmojiPermissions = findByProps("hasEmojiPermission");
-    
-    if (EmojiPermissions) {
-      emojiPatches.push(
-        before("hasEmojiPermission", EmojiPermissions, () => {
-          return true;
-        })
-      );
-    } else {
-      console.warn("EmojiPermissions não encontrado");
-    }
-    
-    const UserSettings = findByProps("showEmojiReactions");
-    
-    if (UserSettings) {
-      if (UserSettings.canUseAnimatedEmojis) {
-        emojiPatches.push(
-          before("canUseAnimatedEmojis", UserSettings, () => {
-            return true;
-          })
-        );
-      }
-      
-      if (UserSettings.canUseExternalEmojis) {
-        emojiPatches.push(
-          before("canUseExternalEmojis", UserSettings, () => {
-            return true;
-          })
-        );
-      }
-    } else {
-      console.warn("UserSettings não encontrado");
-    }
-  } catch (e) {
-    console.error("Erro ao aplicar patches de permissões de emoji:", e);
-  }
-};
+const MessageActions = findByProps("sendMessage", "receiveMessage") || findByProps("sendBotMessage", "sendMessage");
+const EmojiUtils = findByProps("getEmojiURL") || findByProps("translateEmojis");
+const EmojiPermissions = findByProps("hasEmojiPermission");
+const UserSettings = findByProps("showEmojiReactions");
 
 export default registerPlugin({
   name: "BetterSpoof",
@@ -117,25 +21,54 @@ export default registerPlugin({
   version: "1.0.0",
   
   onLoad: () => {
-    try {
-      startPlugin();
-      patchEmojiPermissions();
-    } catch (e) {
-      console.error("Erro ao carregar plugin:", e);
+    if (MessageActions && EmojiUtils) {
+      const messagePatch = before("sendMessage", MessageActions, (args) => {
+        const [channelId, message] = args;
+        
+        if (message?.content) {
+          const emojiRegex = /<(a)?:([^:]+):(\d+)>/g;
+          let match;
+          
+          while ((match = emojiRegex.exec(message.content)) !== null) {
+            const [fullMatch, animated, emojiName, emojiId] = match;
+            
+            if (storage.method === "old") continue;
+            
+            const isAnimated = Boolean(animated);
+            const emojiURL = EmojiUtils.getEmojiURL({
+              id: emojiId,
+              animated: isAnimated
+            });
+            
+            const sizedURL = `${emojiURL}?size=${storage.imageSize}`;
+            message.content = message.content.replace(fullMatch, sizedURL);
+          }
+        }
+        
+        return args;
+      });
+      
+      patches.push(messagePatch);
+    }
+    
+    if (EmojiPermissions) {
+      patches.push(before("hasEmojiPermission", EmojiPermissions, () => true));
+    }
+    
+    if (UserSettings) {
+      if (typeof UserSettings.canUseAnimatedEmojis === "function") {
+        patches.push(before("canUseAnimatedEmojis", UserSettings, () => true));
+      }
+      
+      if (typeof UserSettings.canUseExternalEmojis === "function") {
+        patches.push(before("canUseExternalEmojis", UserSettings, () => true));
+      }
     }
   },
   
   onUnload: () => {
-    try {
-      stopPlugin();
-      for (const unpatch of emojiPatches) {
-        if (typeof unpatch === "function") {
-          unpatch();
-        }
-      }
-      emojiPatches = [];
-    } catch (e) {
-      console.error("Erro ao descarregar plugin:", e);
+    for (const unpatch of patches) {
+      unpatch();
     }
   },
   
