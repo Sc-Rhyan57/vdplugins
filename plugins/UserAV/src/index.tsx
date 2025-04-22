@@ -1,6 +1,6 @@
 import { logger } from "@vendetta"
 import { findByProps } from "@vendetta/metro"
-import { after } from "@vendetta/patcher"
+import { before } from "@vendetta/patcher"
 import { safeFetch } from "@vendetta/utils"
 import { showToast } from "@vendetta/ui/toasts"
 import { getAssetIDByName } from "@vendetta/ui/assets"
@@ -50,12 +50,22 @@ export const onLoad = async () => {
     await fetchData()
     if (!data) return showToast("FALHA AO CARREGAR USERAVATAR", getAssetIDByName("small"))
 
-    unpatch = after("getUserAvatarURL", getUserAvatarURL, ([user, options], res) => {
-        const customAvatar = data?.find((i: userAvatarData) => i.uid === user?.id)
+    unpatch = before("getUserAvatarURL", getUserAvatarURL, (args) => {
+        const user = args[0]
+        if (!user || !user.id) return args
+        
+        const customAvatar = data?.find((i: userAvatarData) => i.uid === user.id)
         if (customAvatar) {
-            return customAvatar.img
+            args[1] = {
+                ...args[1],
+                forcePNG: !customAvatar.animated,
+                size: args[1]?.size || 128
+            }
+            
+            user.avatar = customAvatar._id
         }
-        return res
+        
+        return args
     })
     
     startPeriodicUpdates()
