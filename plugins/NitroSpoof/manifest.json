@@ -1,0 +1,14 @@
+{
+    "name": "BetterSpoof",
+    "description": "Free Emojis",
+    "authors": [
+        {
+            "name": "Rhyan57",
+            "id": "896604349311115304"
+        }
+    ],
+    "main": "src/index.js",
+    "vendetta": {
+        "icon": "ic_profile_24px"
+    }
+}
