@@ -26,13 +26,6 @@ export default () => (<ScrollView>
             }}
         />
         <FormRow
-            label="Como usar"
-            leading={<FormRow.Icon source={getAssetIDByName("ic_help")} />}
-            trailing={FormRow.Arrow}
-            onPress={() => url.openDeeplink("https://dsc.gg/betterstar")}
-            subLabel="Saiba como adicionar sua própria foto de perfil personalizada"
-        />
-        <FormRow
             label="API de avatares"
             leading={<FormRow.Icon source={getAssetIDByName("ic_link")} />}
             subLabel="https://betterAvatars.vercel.app/v1"
