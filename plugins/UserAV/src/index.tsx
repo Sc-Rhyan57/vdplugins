@@ -1,118 +1,91 @@
-import { logger } from "@vendetta";
-import { findByProps, findByName } from "@vendetta/metro";
-import { before, instead } from "@vendetta/patcher";
-import { safeFetch } from "@vendetta/utils";
-import { showToast } from "@vendetta/ui/toasts";
-import { getAssetIDByName } from "@vendetta/ui/assets";
+import { logger } from "@vendetta"
+import { findByProps, findByName } from "@vendetta/metro"
+import { before } from "@vendetta/patcher"
+import { safeFetch } from "@vendetta/utils"
+import { showToast } from "@vendetta/ui/toasts"
+import { getAssetIDByName } from "@vendetta/ui/assets"
 
-import Settings from "./Settings";
+import Settings from "./Settings"
 
-interface UserAvatarData {
-    _id: string;
-    uid: string;
-    img: string;
-    animated: boolean;
+interface userAvatarData {
+    _id: string
+    uid: string
+    img: string
+    animated: boolean
 }
 
-const UserStore = findByName("UserStore");
-const getUserAvatarURL = findByProps("getUserAvatarURL");
-const Avatar = findByName("Avatar") ?? findByProps("AvatarSize").Avatar;
+const getUserAvatarURL = findByProps("getUserAvatarURL")
 
-let data: UserAvatarData[];
-let unpatch: () => void;
-let updateInterval: NodeJS.Timeout;
-let avatarCache = new Map<string, string>();
+let data: userAvatarData[]
+let unpatch: () => void
+let updateInterval: NodeJS.Timeout
 
-export const fetchData = async (forceUpdate = false) => {
+export const fetchData = async () => {
     try {
-        const response = await safeFetch("https://raw.githubusercontent.com/Sc-Rhyan57/USERAVATAR/refs/heads/main/data.json", {
-            cache: "no-store",
-            headers: { "Cache-Control": "no-cache" }
-        });
+        const response = await safeFetch("https://raw.githubusercontent.com/Sc-Rhyan57/USERAVATAR/refs/heads/main/data.json", { cache: "no-store" })
+        const newData = await response.json()
         
-        const newData = await response.json();
-        
-        if (forceUpdate || JSON.stringify(data) !== JSON.stringify(newData)) {
-            data = newData;
-            avatarCache.clear();
-            logger.log("[USERAVATAR] Dados atualizados!");
-            showToast("UserAvatar atualizado!", getAssetIDByName("check"));
+        if (JSON.stringify(data) !== JSON.stringify(newData)) {
+            data = newData
+            logger.log("[ USERAVATAR ] Dados atualizados com sucesso!")
+            showToast("UserAvatar atualizado!", getAssetIDByName("check"))
         }
         
-        return data;
+        return data
     } catch (e) {
-        logger.error("[USERAVATAR] Erro na API!", e);
-        showToast("Falha ao atualizar UserAvatar!", getAssetIDByName("small"));
-        return null;
+        logger.error("[ USERAVATAR ] API NÃO RESPONDEU!", e)
+        return null
     }
-};
+}
 
-const forceClearAvatarCache = (userId: string) => {
-    const user = UserStore.getUser(userId);
-    if (user) {
-        delete user.avatar;
-        delete user._avatar;
-        UserStore.emitChange();
-    }
-};
+const startPeriodicUpdates = (intervalMs = 60000) => {
+    if (updateInterval) clearInterval(updateInterval)
+    
+    updateInterval = setInterval(async () => {
+        await fetchData()
+    }, intervalMs)
+}
 
 export const onLoad = async () => {
-    await fetchData(true);
-    if (!data) return showToast("FALHA AO CARREGAR USERAVATAR", getAssetIDByName("small"));
+    await fetchData()
+    if (!data) return showToast("FALHA AO CARREGAR USERAVATAR", getAssetIDByName("small"))
 
     unpatch = before("getUserAvatarURL", getUserAvatarURL, (args) => {
-        const [user, options] = args;
-        if (!user?.id) return args;
-
-        const customAvatar = data?.find(i => i.uid === user.id.toString());
+        const user = args[0]
+        const options = args[1]
+        
+        if (!user || !user.id) return args
+        
+        const customAvatar = data?.find((i: userAvatarData) => i.uid === user.id)
         if (customAvatar) {
-            const timestamp = Date.now();
-            const avatarUrl = `${customAvatar.img}?t=${timestamp}`;
-            avatarCache.set(user.id, avatarUrl);
-            forceClearAvatarCache(user.id);
-            
-            return [{
+            // Cria uma cópia do usuário para não modificar o original
+            const modifiedUser = {
                 ...user,
-                avatar: customAvatar._id,
-                _avatar: avatarUrl
-            }, {
-                ...options,
-                forcePNG: !customAvatar.animated,
-                size: options?.size || 128
-            }];
+                avatar: customAvatar._id
+            }
+            
+            // Substitui o primeiro argumento com o usuário modificado
+            args[0] = modifiedUser
+            
+            // Ajusta as opções se necessário
+            if (options) {
+                args[1] = {
+                    ...options,
+                    forcePNG: !customAvatar.animated
+                }
+            }
         }
         
-        return args;
-    });
-
-    instead("render", Avatar, (args, orig) => {
-        const [props] = args;
-        if (!props?.user?.id) return orig(...args);
-
-        const cachedUrl = avatarCache.get(props.user.id);
-        if (cachedUrl) {
-            return orig({
-                ...props,
-                source: { uri: cachedUrl },
-                user: {
-                    ...props.user,
-                    avatar: undefined
-                }
-            });
-        }
-
-        return orig(...args);
-    });
-
-    if (updateInterval) clearInterval(updateInterval);
-    updateInterval = setInterval(() => fetchData(), 60000);
-};
+        return args
+    })
+    
+    startPeriodicUpdates()
+}
 
 export const onUnload = () => {
-    unpatch?.();
-    clearInterval(updateInterval);
-    avatarCache.clear();
-    UserStore.emitChange();
-};
+    unpatch?.()
+    
+    if (updateInterval) clearInterval(updateInterval)
+}
 
-export const settings = Settings;
+export const settings = Settings
