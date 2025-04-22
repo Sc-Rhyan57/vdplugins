@@ -14,16 +14,32 @@ function extractUnusableEmojis(messageString: string, size: number) {
 	for (const emojiString of emojiStrings) {
 		// Fetch required info about the emoji
 		const emoji = getCustomEmojiById(emojiString[2]);
+		
+		if (!emoji) continue;
 
-		// Check emoji usability
-		if (
-			emoji.guildId != getGuildId() ||
-			emoji.animated
-		) {
-			// Remove emote from original msg
-			messageString = messageString.replace(emojiString[0], "");
-			// Add to emotes to send
-			emojiUrls.push(`${emoji.url.split("?")[0]}?size=${size}`);
+		// Check emoji usability - similar to Aliucord's isUsable & available check
+		// The key change here: allow ALL emojis to be used regardless of guild or animation
+		// This matches the functionality of the Aliucord NitroSpoof plugin
+		if (emoji) {
+			// Only replace and extract emojis if they're from another guild or animated
+			// This mimics Aliucord's behavior
+			if (emoji.guildId != getGuildId() || emoji.animated) {
+				// Remove emote from original msg
+				messageString = messageString.replace(emojiString[0], "");
+				
+				// Build URL similar to Aliucord's getChatReplacement
+				let finalUrl = "https://cdn.discordapp.com/emojis/";
+				finalUrl += emoji.id;
+				finalUrl += (emoji.animated ? ".gif" : ".png") + "?quality=lossless&name=" + emoji.name;
+				
+				// Add size parameter if specified
+				if (size) {
+					finalUrl += "&size=" + size;
+				}
+				
+				// Add to emotes to send
+				emojiUrls.push(finalUrl);
+			}
 		}
 	}
 
