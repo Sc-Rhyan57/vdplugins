@@ -1,0 +1,14 @@
+{
+    "name": "BetterSpoof",
+    "description": "Use emojis nitro sem precisar do Nitro!",
+    "authors": [
+        {
+            "name": "Rhyan57",
+            "id": "896604349311115304"
+        }
+    ],
+    "main": "src/index.tsx",
+    "vendetta": {
+        "icon": "ic_profile_24px"
+    }
+}
