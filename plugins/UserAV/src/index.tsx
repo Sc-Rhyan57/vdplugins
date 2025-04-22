@@ -1,4 +1,3 @@
-
 import { logger } from "@vendetta"
 import { findByProps } from "@vendetta/metro"
 import { after } from "@vendetta/patcher"
@@ -51,12 +50,12 @@ export const onLoad = async () => {
     await fetchData()
     if (!data) return showToast("FALHA AO CARREGAR USERAVATAR", getAssetIDByName("small"))
 
-    unpatch = after("getUserAvatarURL", getUserAvatarURL, ([user, options]) => {
+    unpatch = after("getUserAvatarURL", getUserAvatarURL, ([user, options], res) => {
         const customAvatar = data?.find((i: userAvatarData) => i.uid === user?.id)
         if (customAvatar) {
-
             return customAvatar.img
         }
+        return res
     })
     
     startPeriodicUpdates()
